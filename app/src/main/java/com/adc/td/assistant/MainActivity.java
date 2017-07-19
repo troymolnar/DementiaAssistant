@@ -1,15 +1,20 @@
 package com.adc.td.assistant;
 
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Bundle;
+import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.util.List;
 
 import ai.api.AIListener;
 import ai.api.AIServiceException;
@@ -28,10 +33,15 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
 
     private static final String CLIENT_API_TOKEN = "4bc68760f7b34a458d4acaf4a4552e10";
 
+    private static final int SPEECH_REQUEST_CODE = 2525;
+
     TextView instructionView;
     EditText queryText;
     TextView resultView;
     TextToSpeech tts;
+    AIService aiService;
+
+//    SpeechClient speech = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,12 +57,22 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
 
         tts = new TextToSpeech(this, this);
 
+//        try {
+//            speech = SpeechClient.create();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        speech.
+
+
+
 
         final AIConfiguration config = new AIConfiguration(CLIENT_API_TOKEN,
                 AIConfiguration.SupportedLanguages.English,
                 AIConfiguration.RecognitionEngine.System);
 
-        final AIService aiService = AIService.getService(this, config);
+        aiService = AIService.getService(this, config);
 
         aiService.setListener(this);
 
@@ -60,47 +80,28 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
         micOnButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                aiService.startListening();
+                startSpeechToTextActivity();
             }
         });
 
-        micOffButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                aiService.stopListening();
-            }
-        });
+//        micOnButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                aiService.startListening();
+//            }
+//        });
+
+//        micOffButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                aiService.stopListening();
+//            }
+//        });
 
         okButton.setOnClickListener(new View.OnClickListener() {
-            private Exception exception = null;
-
             @Override
             public void onClick(View view) {
-                AIRequest request = new AIRequest(queryText.getText().toString());
-                new AsyncTask<AIRequest, Void, AIResponse>() {
-                    @Override
-                    protected AIResponse doInBackground(AIRequest... requests) {
-                        final AIRequest request = requests[0];
-                        try {
-                            return aiService.textRequest(request);
-                        } catch (AIServiceException e) {
-                            exception = e;
-                            Log.e(TAG, "error sending text request", e);
-                        }
-                        ;
-                        return null;
-                    }
-
-                    @Override
-                    protected void onPostExecute(AIResponse aiResponse) {
-                        if (aiResponse != null) {
-                            // process aiResponse here
-                            onResult(aiResponse);
-                        } else if (exception != null) {
-                            resultView.setText("TEXT ERROR: " + exception.getMessage());
-                        }
-                    }
-                }.execute(request);
+                sendAiRequest(queryText.getText().toString());
             }
         });
     }
@@ -157,5 +158,59 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
     @Override
     public void onInit(int i) {
         Toast.makeText(this, "tts has initialized", Toast.LENGTH_SHORT).show();
+    }
+
+
+    private void sendAiRequest(String query) {
+        AIRequest request = new AIRequest(query);
+        new AsyncTask<AIRequest, Void, AIResponse>() {
+            private Exception exception = null;
+            @Override
+            protected AIResponse doInBackground(AIRequest... requests) {
+                final AIRequest request = requests[0];
+                try {
+                    return aiService.textRequest(request);
+                } catch (AIServiceException e) {
+                    exception = e;
+                    Log.e(TAG, "error sending text request", e);
+                }
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(AIResponse aiResponse) {
+                if (aiResponse != null) {
+                    // process aiResponse here
+                    onResult(aiResponse);
+                } else if (exception != null) {
+                    resultView.setText("TEXT ERROR: " + exception.getMessage());
+                }
+            }
+        }.execute(request);
+    }
+
+    private void startSpeechToTextActivity() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, "en-US");
+
+        try {
+            startActivityForResult(intent, SPEECH_REQUEST_CODE);
+        } catch (ActivityNotFoundException a) {
+            Log.e(TAG, "Your device does not support Speech to Text");
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == SPEECH_REQUEST_CODE) {
+            if (resultCode == RESULT_OK && data != null) {
+                List<String> result =
+                        data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                String spokenText = result.get(0);
+                sendAiRequest(spokenText);
+            }
+        }
     }
 }
