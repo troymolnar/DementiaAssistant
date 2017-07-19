@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "262078711791",
+    "firebase_url": "https://newagent-c9bce.firebaseio.com",
+    "project_id": "newagent-c9bce",
+    "storage_bucket": "newagent-c9bce.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:262078711791:android:f6b635c78f8271c5",
+        "android_client_info": {
+          "package_name": "com.firebaseDementia"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "262078711791-f9h2nj88g3kn0bpicgls474l298uhr5p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZPUm6OyP5KJ_wdEKXE4Pe8rmgTxI1bXc"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
