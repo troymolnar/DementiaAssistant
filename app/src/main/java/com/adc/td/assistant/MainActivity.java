@@ -14,7 +14,9 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.List;
+import com.firebaseDementia.R;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import ai.api.AIListener;
 import ai.api.AIServiceException;
@@ -24,8 +26,9 @@ import ai.api.model.AIError;
 import ai.api.model.AIRequest;
 import ai.api.model.AIResponse;
 import ai.api.model.Result;
-
 import static android.speech.tts.TextToSpeech.QUEUE_FLUSH;
+
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements AIListener, TextToSpeech.OnInitListener {
 
@@ -125,6 +128,18 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
         queryText.setText(resolvedQuery);
         resultView.setText(builder.toString());
         tts.speak(speech, QUEUE_FLUSH, null, "UTTERANCEID"+System.currentTimeMillis());
+
+        try {
+            // Write a message to the database
+            FirebaseDatabase database = FirebaseDatabase.getInstance();
+            DatabaseReference myRef = database.getReference("Dementia Logs");
+
+            myRef.push().setValue(resolvedQuery + " : " + speech );
+        }catch(Exception e) {
+            Log.e("crash", "Error", e);
+        }
+
+        Log.d("firebase logs", "Save " + resolvedQuery + " " + speech + " " + result.getAction());
     }
 
     @Override
