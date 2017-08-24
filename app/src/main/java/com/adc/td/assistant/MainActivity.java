@@ -1,11 +1,15 @@
 package com.adc.td.assistant;
 
-import android.content.ActivityNotFoundException;
+import android.Manifest;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.speech.RecognizerIntent;
+import android.os.IBinder;
 import android.speech.tts.TextToSpeech;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -26,11 +30,10 @@ import ai.api.model.AIError;
 import ai.api.model.AIRequest;
 import ai.api.model.AIResponse;
 import ai.api.model.Result;
+
 import static android.speech.tts.TextToSpeech.QUEUE_FLUSH;
 
-import java.util.List;
-
-public class MainActivity extends AppCompatActivity implements AIListener, TextToSpeech.OnInitListener {
+public class MainActivity extends AppCompatActivity implements AIListener, TextToSpeech.OnInitListener, MessageDialogFragment.Listener {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
@@ -43,6 +46,9 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
     TextView resultView;
     TextToSpeech tts;
     AIService aiService;
+
+    private SpeechService speechService;
+    private VoiceRecorder voiceRecorder;
 
 //    SpeechClient speech = null;
 
@@ -204,28 +210,109 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
         }.execute(request);
     }
 
-    private void startSpeechToTextActivity() {
-        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, "en-US");
+    private final VoiceRecorder.Callback mVoiceCallback = new VoiceRecorder.Callback() {
 
-        try {
-            startActivityForResult(intent, SPEECH_REQUEST_CODE);
-        } catch (ActivityNotFoundException a) {
-            Log.e(TAG, "Your device does not support Speech to Text");
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == SPEECH_REQUEST_CODE) {
-            if (resultCode == RESULT_OK && data != null) {
-                List<String> result =
-                        data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-                String spokenText = result.get(0);
-                sendAiRequest(spokenText);
+        @Override
+        public void onVoiceStart() {
+            onListeningStarted();
+            if (speechService != null) {
+                speechService.startRecognizing(voiceRecorder.getSampleRate());
             }
         }
+
+        @Override
+        public void onVoice(byte[] data, int size) {
+            if (speechService != null) {
+                speechService.recognize(data, size);
+            }
+        }
+
+        @Override
+        public void onVoiceEnd() {
+            onListeningFinished();
+            if (speechService != null) {
+                speechService.finishRecognizing();
+            }
+        }
+
+    };
+
+    private void startGoogleCloudVoice() {
+        // Prepare Cloud Speech API
+        bindService(new Intent(this, SpeechService.class), mServiceConnection, BIND_AUTO_CREATE);
+
+        // Start listening to voices
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_GRANTED) {
+            startVoiceRecorder();
+        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                Manifest.permission.RECORD_AUDIO)) {
+            showPermissionMessageDialog();
+        } else {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO},
+                    REQUEST_RECORD_AUDIO_PERMISSION);
+        }
     }
+
+    private void startVoiceRecorder() {
+        if (voiceRecorder != null) {
+            voiceRecorder.stop();
+        }
+        voiceRecorder = new VoiceRecorder(mVoiceCallback);
+        voiceRecorder.start();
+    }
+
+    private void stopVoiceRecorder() {
+        if (voiceRecorder != null) {
+            voiceRecorder.stop();
+            voiceRecorder = null;
+        }
+    }
+
+    private void showPermissionMessageDialog() {
+        MessageDialogFragment
+                .newInstance(getString(R.string.permission_message))
+                .show(getSupportFragmentManager(), FRAGMENT_MESSAGE_DIALOG);
+    }
+
+    private final ServiceConnection mServiceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder binder) {
+            speechService = SpeechService.from(binder);
+            speechService.addListener(speechServiceListener);
+//            mStatus.setVisibility(View.VISIBLE);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            speechService = null;
+        }
+
+    };
+
+//    private void startSpeechToTextActivity() {
+//        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+//        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, "en-US");
+//
+//        try {
+//            startActivityForResult(intent, SPEECH_REQUEST_CODE);
+//        } catch (ActivityNotFoundException a) {
+//            Log.e(TAG, "Your device does not support Speech to Text");
+//        }
+//    }
+//
+//    @Override
+//    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+//        super.onActivityResult(requestCode, resultCode, data);
+//
+//        if (requestCode == SPEECH_REQUEST_CODE) {
+//            if (resultCode == RESULT_OK && data != null) {
+//                List<String> result =
+//                        data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+//                String spokenText = result.get(0);
+//                sendAiRequest(spokenText);
+//            }
+//        }
+//    }
 }
