@@ -11,6 +11,7 @@ import android.os.IBinder;
 import android.speech.tts.TextToSpeech;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -40,6 +41,10 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
     private static final String CLIENT_API_TOKEN = "4bc68760f7b34a458d4acaf4a4552e10";
 
     private static final int SPEECH_REQUEST_CODE = 2525;
+
+    private static final int REQUEST_RECORD_AUDIO_PERMISSION = 1;
+
+    private static final String FRAGMENT_MESSAGE_DIALOG = "message_dialog";
 
     TextView instructionView;
     EditText queryText;
@@ -89,7 +94,8 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
         micOnButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startSpeechToTextActivity();
+//                startSpeechToTextActivity();
+                startGoogleCloudVoice();
             }
         });
 
@@ -290,6 +296,35 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
         }
 
     };
+
+    @Override
+    public void onMessageDialogDismissed() {
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO},
+                REQUEST_RECORD_AUDIO_PERMISSION);
+    }
+
+    private final SpeechService.Listener speechServiceListener =
+            new SpeechService.Listener() {
+                @Override
+                public void onSpeechRecognized(final String text, final boolean isFinal) {
+                    if (isFinal) {
+                        voiceRecorder.dismiss();
+                    }
+                    if (text != null && !TextUtils.isEmpty(text)) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (isFinal) {
+                                    resultView.setText(null);
+                                    sendAiRequest(text);
+                                } else {
+                                    resultView.setText(text);
+                                }
+                            }
+                        });
+                    }
+                }
+            };
 
 //    private void startSpeechToTextActivity() {
 //        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);

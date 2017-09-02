@@ -2,6 +2,7 @@
     <string name="app_name">Dementia Assistant</string>
 
     <string name="default_instruction">Try typing text or hitting Mic</string>
+    <string name="permission_message">This app needs to record audio and recognize your speech.</string>
     <string name="listening">Listening...</string>
     <string name="listening_finished">Listening Finished</string>
 </resources>
