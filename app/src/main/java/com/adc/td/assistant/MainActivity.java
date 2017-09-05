@@ -40,8 +40,6 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
 
     private static final String CLIENT_API_TOKEN = "4bc68760f7b34a458d4acaf4a4552e10";
 
-    private static final int SPEECH_REQUEST_CODE = 2525;
-
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 1;
 
     private static final String FRAGMENT_MESSAGE_DIALOG = "message_dialog";
@@ -89,7 +87,7 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
             @Override
             public void onClick(View view) {
                 stopVoiceRecorder();
-//                speechService.recognizeInputStream(getResources().openRawResource(R.raw.audio));
+                sendAiRequest(queryText.getText().toString());
             }
         });
 
@@ -111,12 +109,11 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
         Result result = aiResponse.getResult();
         String speech = result.getFulfillment().getSpeech();
         String resolvedQuery = result.getResolvedQuery();
-        builder
-                .append("QUERY: " + resolvedQuery + "\n\n")
-                .append("ACTION: " + result.getAction() + "\n\n")
-                .append("STATUS: " + aiResponse.getStatus() + "\n\n")
-                .append("RESPONSE: " + speech + "\n\n")
-                .append("RAW: " + aiResponse);
+        builder.append("QUERY: ").append(resolvedQuery).append("\n\n")
+                .append("ACTION: ").append(result.getAction()).append("\n\n")
+                .append("STATUS: ").append(aiResponse.getStatus()).append("\n\n")
+                .append("RESPONSE: ").append(speech).append("\n\n").append("RAW: ")
+                .append(aiResponse);
         queryText.setText(resolvedQuery);
         resultView.setText(builder.toString());
         tts.speak(speech, QUEUE_FLUSH, null, "UTTERANCEID"+System.currentTimeMillis());
@@ -137,7 +134,7 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
     @Override
     public void onError(AIError error) {
         instructionView.setText(R.string.default_instruction);
-        resultView.setText("ERROR: " + error.getMessage());
+        resultView.setText(String.format("ERROR: %s", error.getMessage()));
         Log.e(TAG, "AILISTENER onError: " + error.getMessage());
     }
 
@@ -212,7 +209,7 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
                     // process aiResponse here
                     onResult(aiResponse);
                 } else if (exception != null) {
-                    resultView.setText("TEXT ERROR: " + exception.getMessage());
+                    resultView.setText(String.format("TEXT ERROR: %s", exception.getMessage()));
                 }
             }
         }.execute(request);
@@ -279,6 +276,7 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
             voiceRecorder.stop();
             voiceRecorder = null;
         }
+        instructionView.setText(R.string.listening_finished);
     }
 
     private void showPermissionMessageDialog() {
@@ -294,7 +292,6 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
             Log.d(TAG, "onServiceConnected");
             speechService = SpeechService.from(binder);
             speechService.addListener(speechServiceListener);
-//            mStatus.setVisibility(View.VISIBLE);
         }
 
         @Override
@@ -323,6 +320,7 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
                             @Override
                             public void run() {
                                 if (isFinal) {
+                                    stopVoiceRecorder();
                                     resultView.setText(null);
                                     sendAiRequest(text);
                                 } else {
