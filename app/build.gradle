@@ -2,8 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'com.google.protobuf'
 
 ext {
-//    supportLibraryVersion = '25.4.0'
-    grpcVersion = '1.4.0'
+    grpcVersion = '1.6.1'
 }
 
 android {
@@ -18,8 +17,13 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
-        release {
+        debug {
             minifyEnabled false
+            multiDexEnabled true
+        }
+        release {
+            minifyEnabled true
+            multiDexEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
@@ -35,6 +39,9 @@ android {
         exclude 'META-INF/license.txt'
         exclude 'META-INF/dependencies.txt'
         exclude 'META-INF/LGPL2.1'
+        exclude 'project.properties'
+        exclude 'META-INF/io.netty.versions.properties'
+        exclude 'META-INF/INDEX.LIST'
     }
 }
 
@@ -69,32 +76,31 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
         exclude group: "com.google.code.findbugs"
     })
-    compile 'com.google.firebase:firebase-database:11.0.2'
-    compile 'com.android.support:appcompat-v7:26.+'
+    compile 'com.android.support:appcompat-v7:26.0.0'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     testCompile 'junit:junit:4.12'
+    compile'javax.annotation:javax.annotation-api:1.2'
 
+    compile 'com.android.support:multidex:1.0.1'
+
+    // api.ai SDK dependencies
     compile 'ai.api:libai:1.4.8'
     compile 'ai.api:sdk:2.0.5@aar'
-// api.ai SDK dependencies
+
     compile 'com.google.code.gson:gson:2.7'
     compile 'commons-io:commons-io:2.4'
 
 
-    compile'com.google.code.findbugs:jsr305:3.0.0'
-
     compile(group: 'com.google.cloud', name: 'google-cloud-speech', version: '+') {
         exclude group: "com.google.code.findbugs"
+        exclude group: 'org.json'
+        exclude group: 'org.apache.httpcomponents'
     }
 
-    compile('javax.annotation:javax.annotation-api:1.2') {
-        exclude group: "com.google.code.findbugs"
-    }
+    compile 'com.google.firebase:firebase-database:11.0.2'
 
-//    protobuf 'com.google.protobuf:protobuf-java:3.3.1'
-
-    compile 'io.grpc:grpc-core:1.4.0'
     // gRPC
+    compile "io.grpc:grpc-core:$grpcVersion"
     compile("io.grpc:grpc-okhttp:$grpcVersion") {
         exclude group: "com.google.code.findbugs"
     }
@@ -107,22 +113,7 @@ dependencies {
     compile 'javax.annotation:javax.annotation-api:1.2'
     protobuf 'com.google.protobuf:protobuf-java:3.3.1'
 
-    // gRPC
-
-//    compile ("io.grpc:grpc-okhttp:+"){
-//        exclude group: "com.google.code.findbugs"
-//    }
-
-//    compile ("io.grpc:grpc-protobuf-lite:+"){
-//        exclude group: "com.google.code.findbugs"
-//    }
-
-//    compile ("io.grpc:grpc-stub:+"){
-//        exclude group: "com.google.code.findbugs"
-//    }
-
     // OAuth2 for Google API
-
     compile('com.google.auth:google-auth-library-oauth2-http:0.7.0') {
         exclude group: "com.google.code.findbugs"
         exclude module: 'httpclient'

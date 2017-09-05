@@ -29,6 +29,7 @@ import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.firebaseDementia.R;
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -181,6 +182,7 @@ public class SpeechService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        Log.d(TAG, "onCreate");
         mHandler = new Handler();
         fetchAccessToken();
     }
@@ -370,6 +372,7 @@ public class SpeechService extends Service {
 
         @Override
         protected void onPostExecute(AccessToken accessToken) {
+            Log.d(TAG, "access token task complete: " + accessToken.toString());
             mAccessTokenTask = null;
             final ManagedChannel channel = new OkHttpChannelProvider()
                     .builderForAddress(HOSTNAME, PORT)

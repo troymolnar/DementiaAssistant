@@ -55,32 +55,19 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
     private SpeechService speechService;
     private VoiceRecorder voiceRecorder;
 
-//    SpeechClient speech = null;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        instructionView = (TextView) findViewById(R.id.instruction);
-        queryText = (EditText) findViewById(R.id.editText);
-        Button micOnButton = (Button) findViewById(R.id.mic_on);
-        Button micOffButton = (Button) findViewById(R.id.mic_off);
-        Button okButton = (Button) findViewById(R.id.button);
-        resultView = (TextView) findViewById(R.id.result);
+        instructionView = findViewById(R.id.instruction);
+        queryText = findViewById(R.id.editText);
+        Button micOnButton = findViewById(R.id.mic_on);
+        Button micOffButton = findViewById(R.id.mic_off);
+        Button okButton = findViewById(R.id.button);
+        resultView = findViewById(R.id.result);
 
         tts = new TextToSpeech(this, this);
-
-//        try {
-//            speech = SpeechClient.create();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        speech.
-
-
-
 
         final AIConfiguration config = new AIConfiguration(CLIENT_API_TOKEN,
                 AIConfiguration.SupportedLanguages.English,
@@ -94,24 +81,17 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
         micOnButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-//                startSpeechToTextActivity();
                 startGoogleCloudVoice();
             }
         });
 
-//        micOnButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                aiService.startListening();
-//            }
-//        });
-
-//        micOffButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                aiService.stopListening();
-//            }
-//        });
+        micOffButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                stopVoiceRecorder();
+//                speechService.recognizeInputStream(getResources().openRawResource(R.raw.audio));
+            }
+        });
 
         okButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -168,18 +148,33 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
 
     @Override
     public void onListeningStarted() {
-        instructionView.setText(R.string.listening);
-        queryText.setText(null);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                instructionView.setText(R.string.listening);
+                queryText.setText(null);
+            }
+        });
     }
 
     @Override
     public void onListeningCanceled() {
-        instructionView.setText(R.string.default_instruction);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                instructionView.setText(R.string.default_instruction);
+            }
+        });
     }
 
     @Override
     public void onListeningFinished() {
-        instructionView.setText(R.string.listening_finished);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                instructionView.setText(R.string.listening_finished);
+            }
+        });
     }
 
     @Override
@@ -189,7 +184,14 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
 
 
     private void sendAiRequest(String query) {
-        AIRequest request = new AIRequest(query);
+        AIRequest request;
+        try {
+            request = new AIRequest(query);
+        } catch (Exception e) {
+            Log.e(TAG, "failed to create AiRequest", e);
+            resultView.setText(e.getMessage());
+            return;
+        }
         new AsyncTask<AIRequest, Void, AIResponse>() {
             private Exception exception = null;
             @Override
@@ -216,10 +218,11 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
         }.execute(request);
     }
 
-    private final VoiceRecorder.Callback mVoiceCallback = new VoiceRecorder.Callback() {
+    private final VoiceRecorder.Callback voiceCallback = new VoiceRecorder.Callback() {
 
         @Override
         public void onVoiceStart() {
+            Log.d(TAG, "onVoiceStart");
             onListeningStarted();
             if (speechService != null) {
                 speechService.startRecognizing(voiceRecorder.getSampleRate());
@@ -228,6 +231,7 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
 
         @Override
         public void onVoice(byte[] data, int size) {
+//            Log.d(TAG, "onVoice");
             if (speechService != null) {
                 speechService.recognize(data, size);
             }
@@ -235,6 +239,7 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
 
         @Override
         public void onVoiceEnd() {
+            Log.d(TAG, "onVoiceEnd");
             onListeningFinished();
             if (speechService != null) {
                 speechService.finishRecognizing();
@@ -245,7 +250,7 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
 
     private void startGoogleCloudVoice() {
         // Prepare Cloud Speech API
-        bindService(new Intent(this, SpeechService.class), mServiceConnection, BIND_AUTO_CREATE);
+        bindService(new Intent(this, SpeechService.class), serviceConnection, BIND_AUTO_CREATE);
 
         // Start listening to voices
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
@@ -261,10 +266,11 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
     }
 
     private void startVoiceRecorder() {
+        Log.d(TAG, "voice recorder started");
         if (voiceRecorder != null) {
             voiceRecorder.stop();
         }
-        voiceRecorder = new VoiceRecorder(mVoiceCallback);
+        voiceRecorder = new VoiceRecorder(voiceCallback);
         voiceRecorder.start();
     }
 
@@ -281,10 +287,11 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
                 .show(getSupportFragmentManager(), FRAGMENT_MESSAGE_DIALOG);
     }
 
-    private final ServiceConnection mServiceConnection = new ServiceConnection() {
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
 
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder binder) {
+            Log.d(TAG, "onServiceConnected");
             speechService = SpeechService.from(binder);
             speechService.addListener(speechServiceListener);
 //            mStatus.setVisibility(View.VISIBLE);
@@ -292,6 +299,7 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
+            Log.d(TAG, "onServiceDisconnected");
             speechService = null;
         }
 
@@ -325,29 +333,4 @@ public class MainActivity extends AppCompatActivity implements AIListener, TextT
                     }
                 }
             };
-
-//    private void startSpeechToTextActivity() {
-//        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-//        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, "en-US");
-//
-//        try {
-//            startActivityForResult(intent, SPEECH_REQUEST_CODE);
-//        } catch (ActivityNotFoundException a) {
-//            Log.e(TAG, "Your device does not support Speech to Text");
-//        }
-//    }
-//
-//    @Override
-//    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-//        super.onActivityResult(requestCode, resultCode, data);
-//
-//        if (requestCode == SPEECH_REQUEST_CODE) {
-//            if (resultCode == RESULT_OK && data != null) {
-//                List<String> result =
-//                        data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-//                String spokenText = result.get(0);
-//                sendAiRequest(spokenText);
-//            }
-//        }
-//    }
 }
