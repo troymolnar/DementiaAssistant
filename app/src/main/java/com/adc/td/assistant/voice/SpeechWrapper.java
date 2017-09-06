@@ -11,15 +11,14 @@ import android.util.Log;
 
 import com.adc.td.assistant.voice.google.SpeechService;
 import com.adc.td.assistant.voice.google.VoiceRecorder;
-import com.google.firebase.FirebaseApp;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import ai.api.android.AIConfiguration;
 import ai.api.model.AIError;
 import ai.api.model.AIRequest;
 import ai.api.model.AIResponse;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class SpeechWrapper implements SpeechCallback {
 
@@ -38,8 +37,8 @@ public class SpeechWrapper implements SpeechCallback {
     public SpeechWrapper(@NonNull final Context context) {
         this.context = context;
         final AIConfiguration config = new AIConfiguration(CLIENT_API_TOKEN,
-            AIConfiguration.SupportedLanguages.English,
-            AIConfiguration.RecognitionEngine.System);
+                AIConfiguration.SupportedLanguages.English,
+                AIConfiguration.RecognitionEngine.System);
         aiAsyncHandler = new AIAsyncHandler(context, config, this);
 
         callbackList = new ArrayList<>();
@@ -108,7 +107,7 @@ public class SpeechWrapper implements SpeechCallback {
             if (speechService != null) {
                 speechService.finishRecognizing();
             }
-            //            stopListening();
+            stopListening();
         }
     };
 
@@ -119,34 +118,43 @@ public class SpeechWrapper implements SpeechCallback {
             Log.d(TAG, "onServiceConnected");
             speechService = SpeechService.from(binder);
             speechService.addListener(speechServiceListener);
+            onSpeechServiceConnected(true);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
             Log.d(TAG, "onServiceDisconnected");
             speechService = null;
+            onSpeechServiceConnected(false);
         }
 
     };
 
     private final SpeechService.Listener speechServiceListener =
-        new SpeechService.Listener() {
-            @Override
-            public void onSpeechRecognized(final String text, final boolean isFinal) {
-                recognizedText = text;
-                if (isFinal) {
-                    voiceRecorder.dismiss();
-                }
-                if (!TextUtils.isEmpty(text)) {
+            new SpeechService.Listener() {
+                @Override
+                public void onSpeechRecognized(final String text, final boolean isFinal) {
+                    recognizedText = text;
                     if (isFinal) {
-                        onListeningFinished(recognizedText);
-                        sendAiRequest(text);
-                    } else {
-                        onListeningPartial(recognizedText);
+                        voiceRecorder.dismiss();
+                    }
+                    if (!TextUtils.isEmpty(text)) {
+                        if (isFinal) {
+                            onListeningFinished(recognizedText);
+                            sendAiRequest(text);
+                        } else {
+                            onListeningPartial(recognizedText);
+                        }
                     }
                 }
-            }
-        };
+            };
+
+    @Override
+    public void onSpeechServiceConnected(boolean ready) {
+        for (SpeechCallback callback : callbackList) {
+            callback.onSpeechServiceConnected(ready);
+        }
+    }
 
     @Override
     public void onListeningStarted() {

@@ -7,6 +7,8 @@ import ai.api.model.AIResponse;
 
 
 public interface SpeechCallback {
+    void onSpeechServiceConnected(boolean ready);
+
     void onListeningStarted();
 
     void onListeningPartial(@NonNull String partialQuery);

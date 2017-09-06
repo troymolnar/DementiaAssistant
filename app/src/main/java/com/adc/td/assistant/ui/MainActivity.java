@@ -10,6 +10,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.adc.td.assistant.voice.SpeechCallback;
 import com.adc.td.assistant.voice.SpeechWrapper;
@@ -29,6 +30,9 @@ public class MainActivity extends AppCompatActivity implements MessageDialogFrag
     TextView instructionView;
     EditText queryText;
     TextView resultView;
+    Button connectButton;
+    Button micOnButton;
+    Button micOffButton;
 
     SpeechWrapper speechWrapper;
 
@@ -39,13 +43,21 @@ public class MainActivity extends AppCompatActivity implements MessageDialogFrag
 
         instructionView = findViewById(R.id.instruction);
         queryText = findViewById(R.id.editText);
-        Button micOnButton = findViewById(R.id.mic_on);
-        Button micOffButton = findViewById(R.id.mic_off);
+        connectButton = findViewById(R.id.connect);
+        micOnButton = findViewById(R.id.mic_on);
+        micOffButton = findViewById(R.id.mic_off);
         Button submitButton = findViewById(R.id.submit);
         resultView = findViewById(R.id.result);
 
         speechWrapper = new SpeechWrapper(this);
         speechWrapper.addCallback(callback);
+
+        connectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                speechWrapper.bindService();
+            }
+        });
 
         micOnButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -70,22 +82,36 @@ public class MainActivity extends AppCompatActivity implements MessageDialogFrag
     }
 
     private void openVoiceRecording() {
-        speechWrapper.bindService();
-
         // Start listening to voices
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-            == PackageManager.PERMISSION_GRANTED) {
+                == PackageManager.PERMISSION_GRANTED) {
             speechWrapper.startListening();
         } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-            Manifest.permission.RECORD_AUDIO)) {
+                Manifest.permission.RECORD_AUDIO)) {
             showPermissionMessageDialog();
         } else {
-            ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.RECORD_AUDIO },
-                REQUEST_RECORD_AUDIO_PERMISSION);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO},
+                    REQUEST_RECORD_AUDIO_PERMISSION);
         }
     }
 
     private SpeechCallback callback = new SpeechCallback() {
+        @Override
+        public void onSpeechServiceConnected(boolean ready) {
+            if (ready) {
+                Toast.makeText(MainActivity.this,
+                        R.string.cloud_speech_ready, Toast.LENGTH_SHORT).show();
+                connectButton.setVisibility(View.GONE);
+
+            } else {
+                Toast.makeText(MainActivity.this,
+                        R.string.cloud_speech_disconnected, Toast.LENGTH_SHORT).show();
+                connectButton.setVisibility(View.VISIBLE);
+            }
+            micOnButton.setEnabled(ready);
+            micOffButton.setEnabled(ready);
+        }
+
         @Override
         public void onListeningStarted() {
             runOnUiThread(new Runnable() {
@@ -128,11 +154,11 @@ public class MainActivity extends AppCompatActivity implements MessageDialogFrag
                     String speech = result.getFulfillment().getSpeech();
                     String resolvedQuery = result.getResolvedQuery();
                     builder
-                        .append("QUERY: ").append(resolvedQuery).append("\n\n")
-                        .append("ACTION: ").append(result.getAction()).append("\n\n")
-                        .append("STATUS: ").append(aiResponse.getStatus()).append("\n\n")
-                        .append("RESPONSE: ").append(speech).append("\n\n").append("RAW: ")
-                        .append(aiResponse);
+                            .append("QUERY: ").append(resolvedQuery).append("\n\n")
+                            .append("ACTION: ").append(result.getAction()).append("\n\n")
+                            .append("STATUS: ").append(aiResponse.getStatus()).append("\n\n")
+                            .append("RESPONSE: ").append(speech).append("\n\n").append("RAW: ")
+                            .append(aiResponse);
                     queryText.setText(resolvedQuery);
                     resultView.setText(builder.toString());
                 }
@@ -164,13 +190,13 @@ public class MainActivity extends AppCompatActivity implements MessageDialogFrag
 
     private void showPermissionMessageDialog() {
         MessageDialogFragment
-            .newInstance(getString(R.string.permission_message))
-            .show(getSupportFragmentManager(), FRAGMENT_MESSAGE_DIALOG);
+                .newInstance(getString(R.string.permission_message))
+                .show(getSupportFragmentManager(), FRAGMENT_MESSAGE_DIALOG);
     }
 
     @Override
     public void onMessageDialogDismissed() {
-        ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.RECORD_AUDIO },
-            REQUEST_RECORD_AUDIO_PERMISSION);
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO},
+                REQUEST_RECORD_AUDIO_PERMISSION);
     }
 }
