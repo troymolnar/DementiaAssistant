@@ -372,22 +372,26 @@ public class SpeechService extends Service {
 
         @Override
         protected void onPostExecute(AccessToken accessToken) {
-            Log.d(TAG, "access token task complete: " + accessToken.toString());
-            mAccessTokenTask = null;
-            final ManagedChannel channel = new OkHttpChannelProvider()
-                    .builderForAddress(HOSTNAME, PORT)
-                    .nameResolverFactory(new DnsNameResolverProvider())
-                    .intercept(new GoogleCredentialsInterceptor(new GoogleCredentials(accessToken)
-                            .createScoped(SCOPE)))
-                    .build();
-            mApi = SpeechGrpc.newStub(channel);
+            if (accessToken == null) {
+                Log.e(TAG, "null access token for Google Cloud Speech!!");
+            } else {
+                Log.d(TAG, "access token task complete: " + accessToken.toString());
+                mAccessTokenTask = null;
+                final ManagedChannel channel = new OkHttpChannelProvider()
+                        .builderForAddress(HOSTNAME, PORT)
+                        .nameResolverFactory(new DnsNameResolverProvider())
+                        .intercept(new GoogleCredentialsInterceptor(new GoogleCredentials(accessToken)
+                                .createScoped(SCOPE)))
+                        .build();
+                mApi = SpeechGrpc.newStub(channel);
 
-            // Schedule access token refresh before it expires
-            if (mHandler != null) {
-                mHandler.postDelayed(mFetchAccessTokenRunnable,
-                        Math.max(accessToken.getExpirationTime().getTime()
-                                - System.currentTimeMillis()
-                                - ACCESS_TOKEN_FETCH_MARGIN, ACCESS_TOKEN_EXPIRATION_TOLERANCE));
+                // Schedule access token refresh before it expires
+                if (mHandler != null) {
+                    mHandler.postDelayed(mFetchAccessTokenRunnable,
+                            Math.max(accessToken.getExpirationTime().getTime()
+                                    - System.currentTimeMillis()
+                                    - ACCESS_TOKEN_FETCH_MARGIN, ACCESS_TOKEN_EXPIRATION_TOLERANCE));
+                }
             }
         }
     }

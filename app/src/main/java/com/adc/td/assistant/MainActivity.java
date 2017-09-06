@@ -96,10 +96,11 @@ public class MainActivity extends AppCompatActivity implements MessageDialogFrag
         }
 
         @Override
-        public void onListeningFinished() {
+        public void onListeningFinished(@NonNull final String fullQuery) {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
+                    queryText.setText(fullQuery);
                     instructionView.setText(R.string.listening_finished);
                 }
             });

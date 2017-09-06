@@ -12,6 +12,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
@@ -58,6 +59,8 @@ public class SpeechWrapper {
                 AIConfiguration.RecognitionEngine.System);
         aiService = AIService.getService(context, config);
         aiService.setListener(aiListener);
+
+        FirebaseApp.initializeApp(context);
 
         callbackList = new ArrayList<>();
     }
@@ -132,6 +135,11 @@ public class SpeechWrapper {
             Result result = aiResponse.getResult();
             String speech = result.getFulfillment().getSpeech();
             String resolvedQuery = result.getResolvedQuery();
+
+            Log.d(TAG, "resolved query: " + resolvedQuery);
+            Log.d(TAG, "speech: " + speech);
+            Log.d(TAG, "action: " + result.getAction());
+
             tts.speak(speech, QUEUE_FLUSH, null, "UTTERANCEID" + System.currentTimeMillis());
 
             try {
@@ -142,7 +150,6 @@ public class SpeechWrapper {
             } catch (Exception e) {
                 Log.e(TAG, "Problem calling Firebase", e);
             }
-            Log.d("Firebase logs", "Save " + resolvedQuery + " " + speech + " " + result.getAction());
 
             for (Callback callback : callbackList) {
                 callback.onComplete(aiResponse);
@@ -204,10 +211,10 @@ public class SpeechWrapper {
             if (speechService != null) {
                 speechService.finishRecognizing();
             }
-            stopListening();
-            for (Callback callback : callbackList) {
-                callback.onListeningFinished();
-            }
+//            stopListening();
+//            for (Callback callback : callbackList) {
+//                callback.onListeningFinished();
+//            }
         }
 
     };
@@ -238,6 +245,9 @@ public class SpeechWrapper {
                     }
                     if (!TextUtils.isEmpty(text)) {
                         if (isFinal) {
+                            for (Callback callback : callbackList) {
+                                callback.onListeningFinished(text);
+                            }
                             sendAiRequest(text);
                         } else {
                             for (Callback callback : callbackList) {
@@ -254,7 +264,7 @@ public class SpeechWrapper {
 
         void onListeningPartial(@NonNull String partialQuery);
 
-        void onListeningFinished();
+        void onListeningFinished(@NonNull String fullQuery);
 
         void onComplete(@NonNull AIResponse aiResponse);
 
