@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.adc.td.assistant;
+package com.adc.td.assistant.voice.google;
 
 import android.app.Service;
 import android.content.Context;

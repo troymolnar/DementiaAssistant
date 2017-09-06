@@ -1,4 +1,4 @@
-package com.adc.td.assistant;
+package com.adc.td.assistant.ui;
 
 /*
  * Copyright 2016 Google Inc. All Rights Reserved.

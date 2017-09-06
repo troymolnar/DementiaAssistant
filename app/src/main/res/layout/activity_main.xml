@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.adc.td.assistant.MainActivity"
+    tools:context="com.adc.td.assistant.ui.MainActivity"
     android:orientation="vertical">
 
     <TextView
@@ -15,28 +15,33 @@
 
     <EditText
         android:id="@+id/editText"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
         android:text="where is my medication" />
 
     <Button
-        android:id="@+id/button"
-        android:layout_width="wrap_content"
+        android:id="@+id/submit"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:padding="20dp"
+        android:layout_marginTop="25dp"
         android:text="Submit" />
 
 
     <Button
         android:id="@+id/mic_on"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:padding="20dp"
         android:layout_marginTop="25dp"
         android:text="Mic On" />
     <Button
         android:id="@+id/mic_off"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:padding="20dp"
+        android:layout_marginTop="25dp"
         android:text="Mic Off" />
 
     <TextView

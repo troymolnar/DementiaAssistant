@@ -1,4 +1,4 @@
-package com.adc.td.assistant;
+package com.adc.td.assistant.ui;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -6,12 +6,13 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.adc.td.assistant.voice.SpeechCallback;
+import com.adc.td.assistant.voice.SpeechWrapper;
 import com.firebaseDementia.R;
 
 import ai.api.model.AIError;
@@ -21,7 +22,6 @@ import ai.api.model.Result;
 public class MainActivity extends AppCompatActivity implements MessageDialogFragment.Listener {
 
     private static final String TAG = MainActivity.class.getSimpleName();
-
 
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 1;
     private static final String FRAGMENT_MESSAGE_DIALOG = "message_dialog";
@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity implements MessageDialogFrag
         queryText = findViewById(R.id.editText);
         Button micOnButton = findViewById(R.id.mic_on);
         Button micOffButton = findViewById(R.id.mic_off);
-        Button submitButton = findViewById(R.id.button);
+        Button submitButton = findViewById(R.id.submit);
         resultView = findViewById(R.id.result);
 
         speechWrapper = new SpeechWrapper(this);
@@ -58,10 +58,6 @@ public class MainActivity extends AppCompatActivity implements MessageDialogFrag
             @Override
             public void onClick(View view) {
                 speechWrapper.stopListening();
-                String partialQuery = queryText.getText().toString();
-                if (!TextUtils.isEmpty(partialQuery)) {
-                    speechWrapper.sendAiRequest(partialQuery);
-                }
             }
         });
 
@@ -73,7 +69,23 @@ public class MainActivity extends AppCompatActivity implements MessageDialogFrag
         });
     }
 
-    private SpeechWrapper.Callback callback = new SpeechWrapper.Callback() {
+    private void openVoiceRecording() {
+        speechWrapper.bindService();
+
+        // Start listening to voices
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+            == PackageManager.PERMISSION_GRANTED) {
+            speechWrapper.startListening();
+        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+            Manifest.permission.RECORD_AUDIO)) {
+            showPermissionMessageDialog();
+        } else {
+            ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.RECORD_AUDIO },
+                REQUEST_RECORD_AUDIO_PERMISSION);
+        }
+    }
+
+    private SpeechCallback callback = new SpeechCallback() {
         @Override
         public void onListeningStarted() {
             runOnUiThread(new Runnable() {
@@ -107,58 +119,58 @@ public class MainActivity extends AppCompatActivity implements MessageDialogFrag
         }
 
         @Override
-        public void onComplete(@NonNull AIResponse aiResponse) {
-            StringBuilder builder = new StringBuilder();
-            Result result = aiResponse.getResult();
-            String speech = result.getFulfillment().getSpeech();
-            String resolvedQuery = result.getResolvedQuery();
-            builder.append("QUERY: ").append(resolvedQuery).append("\n\n")
-                    .append("ACTION: ").append(result.getAction()).append("\n\n")
-                    .append("STATUS: ").append(aiResponse.getStatus()).append("\n\n")
-                    .append("RESPONSE: ").append(speech).append("\n\n").append("RAW: ")
-                    .append(aiResponse);
-            queryText.setText(resolvedQuery);
-            resultView.setText(builder.toString());
+        public void onAIResponse(@NonNull final AIResponse aiResponse) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    StringBuilder builder = new StringBuilder();
+                    Result result = aiResponse.getResult();
+                    String speech = result.getFulfillment().getSpeech();
+                    String resolvedQuery = result.getResolvedQuery();
+                    builder
+                        .append("QUERY: ").append(resolvedQuery).append("\n\n")
+                        .append("ACTION: ").append(result.getAction()).append("\n\n")
+                        .append("STATUS: ").append(aiResponse.getStatus()).append("\n\n")
+                        .append("RESPONSE: ").append(speech).append("\n\n").append("RAW: ")
+                        .append(aiResponse);
+                    queryText.setText(resolvedQuery);
+                    resultView.setText(builder.toString());
+                }
+            });
         }
 
         @Override
-        public void onError(@NonNull AIError error) {
-            instructionView.setText(R.string.default_instruction);
-            resultView.setText(String.format("ERROR: %s", error.getMessage()));
+        public void onError(@NonNull final AIError error) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    instructionView.setText(R.string.default_instruction);
+                    resultView.setText(String.format("ERROR: %s", error.getMessage()));
+                }
+            });
         }
 
         @Override
-        public void onException(@NonNull Exception e) {
-            instructionView.setText(R.string.default_instruction);
-            resultView.setText(String.format("ERROR: %s", e.getMessage()));
+        public void onException(@NonNull final Exception e) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    instructionView.setText(R.string.default_instruction);
+                    resultView.setText(String.format("ERROR: %s", e.getMessage()));
+                }
+            });
         }
     };
 
-    private void openVoiceRecording() {
-        speechWrapper.bindService();
-
-        // Start listening to voices
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                == PackageManager.PERMISSION_GRANTED) {
-            speechWrapper.startListening();
-        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                Manifest.permission.RECORD_AUDIO)) {
-            showPermissionMessageDialog();
-        } else {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO},
-                    REQUEST_RECORD_AUDIO_PERMISSION);
-        }
-    }
-
     private void showPermissionMessageDialog() {
         MessageDialogFragment
-                .newInstance(getString(R.string.permission_message))
-                .show(getSupportFragmentManager(), FRAGMENT_MESSAGE_DIALOG);
+            .newInstance(getString(R.string.permission_message))
+            .show(getSupportFragmentManager(), FRAGMENT_MESSAGE_DIALOG);
     }
 
     @Override
     public void onMessageDialogDismissed() {
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO},
-                REQUEST_RECORD_AUDIO_PERMISSION);
+        ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.RECORD_AUDIO },
+            REQUEST_RECORD_AUDIO_PERMISSION);
     }
 }
