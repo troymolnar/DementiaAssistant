@@ -25,8 +25,10 @@ import ai.api.model.AIResponse;
 public class ThingsActivity extends AppCompatActivity {
     private static final String TAG = ThingsActivity.class.getSimpleName();
 
-    private Gpio ledGpio;
-    private ButtonInputDriver buttonInputDriver;
+    private Gpio readyLedGpio;
+    private Gpio listeningLedGpio;
+    private ButtonInputDriver micOnInputDriver;
+    private ButtonInputDriver micOffInputDriver;
     private SpeechWrapper speechWrapper;
 
     @Override
@@ -40,37 +42,16 @@ public class ThingsActivity extends AppCompatActivity {
         speechWrapper.bindService();
     }
 
-//    @Override
-//    public boolean onKeyDown(int keyCode, KeyEvent event) {
-//        Log.i(TAG, "onKeyDown: " + keyCode);
-//        if (keyCode == KeyEvent.KEYCODE_SPACE) {
-//            // Turn on the LED
-//            setLedValue(true);
-//            return true;
-//        }
-//
-//        return super.onKeyDown(keyCode, event);
-//    }
-
-
-//    @Override
-//    public boolean onKeyUp(int keyCode, KeyEvent event) {
-//        Log.i(TAG, "onKeyUp: " + keyCode);
-//        if (keyCode == KeyEvent.KEYCODE_SPACE) {
-//            // Turn off the LED
-//            setLedValue(false);
-//            return true;
-//        }
-//
-//        return super.onKeyUp(keyCode, event);
-//    }
-
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         Log.i(TAG, "onKeyUp: " + keyCode);
-        if (keyCode == KeyEvent.KEYCODE_SPACE) {
-            speechWrapper.startListening();
-            return true;
+        switch(keyCode) {
+            case KeyEvent.KEYCODE_SPACE:
+                speechWrapper.startListening();
+                return true;
+            case KeyEvent.KEYCODE_STAR:
+                speechWrapper.stopListening();
+                return true;
         }
 
         return super.onKeyUp(keyCode, event);
@@ -81,17 +62,23 @@ public class ThingsActivity extends AppCompatActivity {
 
         try {
             Log.i(TAG, "Configuring GPIO pins");
-            ledGpio = pioService.openGpio(PicoPorts.GPIO_LED_LISTENING);
-            ledGpio.setDirection(Gpio.DIRECTION_OUT_INITIALLY_LOW);
+            readyLedGpio = pioService.openGpio(PicoPorts.GPIO_LED_READY);
+            readyLedGpio.setDirection(Gpio.DIRECTION_OUT_INITIALLY_LOW);
+            listeningLedGpio = pioService.openGpio(PicoPorts.GPIO_LED_LISTENING);
+            listeningLedGpio.setDirection(Gpio.DIRECTION_OUT_INITIALLY_LOW);
 
             Log.i(TAG, "Registering button driver");
-            // Initialize and register the InputDriver that will emit SPACE key events
-            // on GPIO state changes.
-            buttonInputDriver = new ButtonInputDriver(
+            // Initialize and register the InputDrivers that will emit key events on GPIO state changes.
+            micOnInputDriver = new ButtonInputDriver(
                     PicoPorts.GPIO_BUTTON_MIC_ON,
                     Button.LogicState.PRESSED_WHEN_LOW,
                     KeyEvent.KEYCODE_SPACE);
-            buttonInputDriver.register();
+            micOnInputDriver.register();
+            micOffInputDriver = new ButtonInputDriver(
+                    PicoPorts.GPIO_BUTTON_MIC_OFF,
+                    Button.LogicState.PRESSED_WHEN_LOW,
+                    KeyEvent.KEYCODE_STAR);
+            micOffInputDriver.register();
         } catch (IOException e) {
             Log.e(TAG, "Error configuring GPIO pins", e);
         }
@@ -100,9 +87,9 @@ public class ThingsActivity extends AppCompatActivity {
     /**
      * Update the value of the LED output.
      */
-    private void setLedValue(boolean value) {
+    private void setLedValue(@NonNull Gpio led, boolean value) {
         try {
-            ledGpio.setValue(value);
+            led.setValue(value);
         } catch (IOException e) {
             Log.e(TAG, "Error updating GPIO value", e);
         }
@@ -112,38 +99,58 @@ public class ThingsActivity extends AppCompatActivity {
     protected void onDestroy(){
         super.onDestroy();
 
-        if (buttonInputDriver != null) {
-            buttonInputDriver.unregister();
+        if (readyLedGpio != null) {
             try {
-                buttonInputDriver.close();
+                readyLedGpio.close();
             } catch (IOException e) {
-                Log.e(TAG, "Error closing Button driver", e);
+                Log.e(TAG, "Error closing readyLedGpio", e);
             } finally{
-                buttonInputDriver = null;
+                readyLedGpio = null;
             }
+            readyLedGpio = null;
+        }
+        if (listeningLedGpio != null) {
+            try {
+                listeningLedGpio.close();
+            } catch (IOException e) {
+                Log.e(TAG, "Error closing listeningLedGpio", e);
+            } finally{
+                listeningLedGpio = null;
+            }
+            listeningLedGpio = null;
         }
 
-        if (ledGpio != null) {
+        if (micOnInputDriver != null) {
+            micOnInputDriver.unregister();
             try {
-                ledGpio.close();
+                micOnInputDriver.close();
             } catch (IOException e) {
-                Log.e(TAG, "Error closing LED GPIO", e);
+                Log.e(TAG, "Error closing micOnInputDriver", e);
             } finally{
-                ledGpio = null;
+                micOnInputDriver = null;
             }
-            ledGpio = null;
+        }
+        if (micOffInputDriver != null) {
+            micOffInputDriver.unregister();
+            try {
+                micOffInputDriver.close();
+            } catch (IOException e) {
+                Log.e(TAG, "Error closing micOffInputDriver", e);
+            } finally{
+                micOffInputDriver = null;
+            }
         }
     }
 
     private SpeechCallback callback = new SpeechCallback() {
         @Override
         public void onSpeechServiceConnected(boolean ready) {
-
+            setLedValue(readyLedGpio, ready);
         }
 
         @Override
         public void onListeningStarted() {
-            setLedValue(true);
+            setLedValue(listeningLedGpio, true);
         }
 
         @Override
@@ -153,7 +160,7 @@ public class ThingsActivity extends AppCompatActivity {
 
         @Override
         public void onListeningFinished(@NonNull final String fullQuery) {
-            setLedValue(false);
+            setLedValue(listeningLedGpio, false);
         }
 
         @Override

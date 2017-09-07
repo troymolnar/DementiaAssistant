@@ -104,10 +104,10 @@ public class SpeechWrapper implements SpeechCallback {
         @Override
         public void onVoiceEnd() {
             Log.d(TAG, "onVoiceEnd");
+            stopListening();
             if (speechService != null) {
                 speechService.finishRecognizing();
             }
-            stopListening();
         }
     };
 

@@ -27,14 +27,13 @@ public class MainActivity extends AppCompatActivity implements MessageDialogFrag
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 1;
     private static final String FRAGMENT_MESSAGE_DIALOG = "message_dialog";
 
-    TextView instructionView;
-    EditText queryText;
-    TextView resultView;
-    Button connectButton;
-    Button micOnButton;
-    Button micOffButton;
-
-    SpeechWrapper speechWrapper;
+    private TextView instructionView;
+    private EditText queryText;
+    private TextView resultView;
+    private Button connectButton;
+    private Button micOnButton;
+    private Button micOffButton;
+    private SpeechWrapper speechWrapper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

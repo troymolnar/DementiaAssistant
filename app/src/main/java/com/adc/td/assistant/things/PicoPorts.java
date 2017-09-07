@@ -6,6 +6,10 @@ package com.adc.td.assistant.things;
  */
 public class PicoPorts {
 
+    public static final String GPIO_LED_READY = "GPIO_33";
     public static final String GPIO_LED_LISTENING = "GPIO_34";
+
+
     public static final String GPIO_BUTTON_MIC_ON = "GPIO_174";
+    public static final String GPIO_BUTTON_MIC_OFF = "GPIO_174";
 }
