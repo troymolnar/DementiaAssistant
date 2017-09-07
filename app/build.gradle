@@ -10,7 +10,7 @@ android {
     buildToolsVersion "26.0.0"
     defaultConfig {
         applicationId "com.adc.td.dementiaassistanthackathon"
-        minSdkVersion 21
+        minSdkVersion 24
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
@@ -111,4 +111,8 @@ dependencies {
         exclude group: "com.google.code.findbugs"
         exclude module: 'httpclient'
     }
+
+    //Android Things
+    provided 'com.google.android.things:androidthings:0.5.1-devpreview'
+    compile 'com.google.android.things.contrib:driver-button:0.4'
 }
