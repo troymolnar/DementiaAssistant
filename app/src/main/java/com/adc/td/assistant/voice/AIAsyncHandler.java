@@ -21,6 +21,7 @@ import ai.api.model.AIResponse;
 import ai.api.model.Result;
 import static android.speech.tts.TextToSpeech.QUEUE_FLUSH;
 
+@SuppressWarnings("WeakerAccess")
 public class AIAsyncHandler implements AIListener {
     private static final String TAG = AIAsyncHandler.class.getSimpleName();
 
@@ -80,7 +81,6 @@ public class AIAsyncHandler implements AIListener {
 
     @Override
     public void onError(AIError error) {
-        Log.e(TAG, "AILISTENER onError: " + error.getMessage());
         callback.onError(error);
     }
 
@@ -112,7 +112,6 @@ public class AIAsyncHandler implements AIListener {
                 return aiService.textRequest(request);
             } catch (AIServiceException e) {
                 exception = e;
-                Log.e(TAG, "error sending text request", e);
             }
             return null;
         }

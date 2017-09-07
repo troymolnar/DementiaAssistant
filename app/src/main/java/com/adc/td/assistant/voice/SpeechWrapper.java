@@ -76,7 +76,6 @@ public class SpeechWrapper implements SpeechCallback {
         try {
             request = new AIRequest(query);
         } catch (Exception e) {
-            Log.e(TAG, "failed to create AiRequest", e);
             onException(e);
             return;
         }
@@ -115,7 +114,6 @@ public class SpeechWrapper implements SpeechCallback {
 
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder binder) {
-            Log.d(TAG, "onServiceConnected");
             speechService = SpeechService.from(binder);
             speechService.addListener(speechServiceListener);
             onSpeechServiceConnected(true);
@@ -123,7 +121,6 @@ public class SpeechWrapper implements SpeechCallback {
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
-            Log.d(TAG, "onServiceDisconnected");
             speechService = null;
             onSpeechServiceConnected(false);
         }
@@ -140,7 +137,6 @@ public class SpeechWrapper implements SpeechCallback {
                     }
                     if (!TextUtils.isEmpty(text)) {
                         if (isFinal) {
-                            onListeningFinished(recognizedText);
                             sendAiRequest(text);
                         } else {
                             onListeningPartial(recognizedText);
@@ -151,6 +147,7 @@ public class SpeechWrapper implements SpeechCallback {
 
     @Override
     public void onSpeechServiceConnected(boolean ready) {
+        Log.i(TAG, "onSpeechServiceConnected");
         for (SpeechCallback callback : callbackList) {
             callback.onSpeechServiceConnected(ready);
         }
@@ -158,6 +155,7 @@ public class SpeechWrapper implements SpeechCallback {
 
     @Override
     public void onListeningStarted() {
+        Log.i(TAG, "onListeningStarted");
         for (SpeechCallback callback : callbackList) {
             callback.onListeningStarted();
         }
@@ -165,6 +163,7 @@ public class SpeechWrapper implements SpeechCallback {
 
     @Override
     public void onListeningPartial(@NonNull String partialQuery) {
+        Log.i(TAG, "onListeningPartial: " + partialQuery);
         for (SpeechCallback callback : callbackList) {
             callback.onListeningPartial(partialQuery);
         }
@@ -172,6 +171,7 @@ public class SpeechWrapper implements SpeechCallback {
 
     @Override
     public void onListeningFinished(@NonNull String fullQuery) {
+        Log.i(TAG, "onListeningFinished: " + fullQuery);
         for (SpeechCallback callback : callbackList) {
             callback.onListeningFinished(fullQuery);
         }
@@ -186,6 +186,7 @@ public class SpeechWrapper implements SpeechCallback {
 
     @Override
     public void onError(@NonNull AIError error) {
+        Log.i(TAG, "AI onError: " + error.getMessage());
         for (SpeechCallback callback : callbackList) {
             callback.onError(error);
         }
@@ -193,6 +194,7 @@ public class SpeechWrapper implements SpeechCallback {
 
     @Override
     public void onException(@NonNull Exception e) {
+        Log.i(TAG, "AI onException", e);
         for (SpeechCallback callback : callbackList) {
             callback.onException(e);
         }
