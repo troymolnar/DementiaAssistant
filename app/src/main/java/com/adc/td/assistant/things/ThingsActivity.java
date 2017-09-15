@@ -42,21 +42,6 @@ public class ThingsActivity extends AppCompatActivity {
         speechWrapper.bindService();
     }
 
-    @Override
-    public boolean onKeyUp(int keyCode, KeyEvent event) {
-        Log.i(TAG, "onKeyUp: " + keyCode);
-        switch(keyCode) {
-            case KeyEvent.KEYCODE_SPACE:
-                speechWrapper.startListening();
-                return true;
-            case KeyEvent.KEYCODE_STAR:
-                speechWrapper.stopListening();
-                return true;
-        }
-
-        return super.onKeyUp(keyCode, event);
-    }
-
     private void initIO() {
         PeripheralManagerService pioService = new PeripheralManagerService();
 
@@ -93,6 +78,21 @@ public class ThingsActivity extends AppCompatActivity {
         } catch (IOException e) {
             Log.e(TAG, "Error updating GPIO value", e);
         }
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        Log.i(TAG, "onKeyUp: " + keyCode);
+        switch(keyCode) {
+            case KeyEvent.KEYCODE_SPACE:
+                speechWrapper.startListening();
+                return true;
+            case KeyEvent.KEYCODE_STAR:
+                speechWrapper.stopListening();
+                return true;
+        }
+
+        return super.onKeyUp(keyCode, event);
     }
 
     @Override

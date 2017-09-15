@@ -72,7 +72,7 @@ public class AIAsyncHandler implements AIListener {
             DatabaseReference myRef = database.getReference("Dementia Logs");
             myRef.push().setValue(resolvedQuery + " : " + speech);
         } catch (Exception e) {
-            //todo: this doesn't work, so much log
+            //todo: this doesn't work on Android Things, so much log
 //            Log.e(TAG, "Problem calling Firebase", e);
         }
 
