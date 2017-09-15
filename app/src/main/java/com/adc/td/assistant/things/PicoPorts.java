@@ -11,5 +11,5 @@ public class PicoPorts {
 
 
     public static final String GPIO_BUTTON_MIC_ON = "GPIO_174";
-    public static final String GPIO_BUTTON_MIC_OFF = "GPIO_174";
+    public static final String GPIO_BUTTON_MIC_OFF = "GPIO_175";
 }
