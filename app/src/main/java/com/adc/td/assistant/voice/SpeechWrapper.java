@@ -88,7 +88,7 @@ public class SpeechWrapper implements SpeechCallback {
         public void onVoiceStart() {
             Log.d(TAG, "onVoiceStart");
             onListeningStarted();
-            if (speechService != null) {
+            if (speechService != null && voiceRecorder != null) {
                 speechService.startRecognizing(voiceRecorder.getSampleRate());
             }
         }
@@ -132,7 +132,7 @@ public class SpeechWrapper implements SpeechCallback {
                 @Override
                 public void onSpeechRecognized(final String text, final boolean isFinal) {
                     recognizedText = text;
-                    if (isFinal) {
+                    if (isFinal && voiceRecorder != null) {
                         voiceRecorder.dismiss();
                     }
                     if (!TextUtils.isEmpty(text)) {
