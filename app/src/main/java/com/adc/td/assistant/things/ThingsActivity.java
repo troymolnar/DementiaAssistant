@@ -62,7 +62,7 @@ public class ThingsActivity extends AppCompatActivity {
             micOffInputDriver = new ButtonInputDriver(
                     PicoPorts.GPIO_BUTTON_MIC_OFF,
                     Button.LogicState.PRESSED_WHEN_LOW,
-                    KeyEvent.KEYCODE_STAR);
+                    KeyEvent.KEYCODE_DEL);
             micOffInputDriver.register();
         } catch (IOException e) {
             Log.e(TAG, "Error configuring GPIO pins", e);
@@ -87,7 +87,7 @@ public class ThingsActivity extends AppCompatActivity {
             case KeyEvent.KEYCODE_SPACE:
                 speechWrapper.startListening();
                 return true;
-            case KeyEvent.KEYCODE_STAR:
+            case KeyEvent.KEYCODE_DEL:
                 speechWrapper.stopListening();
                 return true;
         }

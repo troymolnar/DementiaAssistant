@@ -344,6 +344,7 @@ public class SpeechService extends Service {
             if (tokenValue != null && expirationTime > 0) {
                 if (expirationTime
                         > System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TOLERANCE) {
+                    Log.d(TAG, "using stored access token");
                     return new AccessToken(tokenValue, new Date(expirationTime));
                 }
             }
@@ -363,6 +364,7 @@ public class SpeechService extends Service {
                         .putLong(PREF_ACCESS_TOKEN_EXPIRATION_TIME,
                                 token.getExpirationTime().getTime())
                         .apply();
+                Log.d(TAG, "refreshing access token");
                 return token;
             } catch (IOException e) {
                 Log.e(TAG, "Failed to obtain access token.", e);
