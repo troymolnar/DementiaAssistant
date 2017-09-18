@@ -58,17 +58,18 @@ public class SpeechWrapper implements SpeechCallback {
             voiceRecorder.stop();
         }
         recognizedText = "";
-        onListeningPartial(recognizedText);
         voiceRecorder = new VoiceRecorder(voiceCallback);
         voiceRecorder.start();
+        onListeningStarted();
     }
 
     public void stopListening() {
         if (voiceRecorder != null) {
+            Log.d(TAG, "stopListening()");
             voiceRecorder.stop();
             voiceRecorder = null;
+            onListeningFinished(recognizedText);
         }
-        onListeningFinished(recognizedText);
     }
 
     public void sendAiRequest(@NonNull String query) {
@@ -77,6 +78,7 @@ public class SpeechWrapper implements SpeechCallback {
             request = new AIRequest(query);
         } catch (Exception e) {
             onException(e);
+            stopListening();
             return;
         }
         aiAsyncHandler.submitRequest(request);
@@ -87,7 +89,6 @@ public class SpeechWrapper implements SpeechCallback {
         @Override
         public void onVoiceStart() {
             Log.d(TAG, "onVoiceStart");
-            onListeningStarted();
             if (speechService != null && voiceRecorder != null) {
                 speechService.startRecognizing(voiceRecorder.getSampleRate());
             }
@@ -132,15 +133,17 @@ public class SpeechWrapper implements SpeechCallback {
                 @Override
                 public void onSpeechRecognized(final String text, final boolean isFinal) {
                     recognizedText = text;
-                    if (isFinal && voiceRecorder != null) {
-                        voiceRecorder.dismiss();
-                    }
-                    if (!TextUtils.isEmpty(text)) {
-                        if (isFinal) {
+                    if (isFinal) {
+                        if (voiceRecorder != null) {
+                            voiceRecorder.dismiss();
+                        }
+                        if (!TextUtils.isEmpty(text)) {
                             sendAiRequest(text);
                         } else {
-                            onListeningPartial(recognizedText);
+                            stopListening();
                         }
+                    } else {
+                        onListeningPartial(recognizedText);
                     }
                 }
             };
@@ -179,6 +182,7 @@ public class SpeechWrapper implements SpeechCallback {
 
     @Override
     public void onAIResponse(@NonNull AIResponse aiResponse) {
+        stopListening();
         for (SpeechCallback callback : callbackList) {
             callback.onAIResponse(aiResponse);
         }
@@ -187,6 +191,7 @@ public class SpeechWrapper implements SpeechCallback {
     @Override
     public void onError(@NonNull AIError error) {
         Log.i(TAG, "AI onError: " + error.getMessage());
+        stopListening();
         for (SpeechCallback callback : callbackList) {
             callback.onError(error);
         }
@@ -195,6 +200,7 @@ public class SpeechWrapper implements SpeechCallback {
     @Override
     public void onException(@NonNull Exception e) {
         Log.i(TAG, "AI onException", e);
+        stopListening();
         for (SpeechCallback callback : callbackList) {
             callback.onException(e);
         }

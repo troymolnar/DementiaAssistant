@@ -48,10 +48,12 @@ public class AIAsyncHandler implements AIListener {
 
     public void submitRequest(@NonNull AIRequest aiRequest) {
         if (aiAsyncTask != null) {
+            Log.d(TAG, "cancelling outstanding request");
             aiAsyncTask.cancel(true);
         }
         aiAsyncTask = new AIAsyncTask();
         aiAsyncTask.execute(aiRequest);
+        Log.d(TAG, "submitting request...");
     }
 
     @Override
