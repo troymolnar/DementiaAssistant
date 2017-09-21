@@ -344,7 +344,11 @@ public class SpeechService extends Service {
             if (tokenValue != null && expirationTime > 0) {
                 if (expirationTime
                         > System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TOLERANCE) {
+                    Log.d(TAG, "access token expires on " + expirationTime);
+                    Log.d(TAG, "current time is " + System.currentTimeMillis());
+                    Log.d(TAG, "expiration tolerance is " + ACCESS_TOKEN_EXPIRATION_TOLERANCE);
                     Log.d(TAG, "using stored access token");
+
                     return new AccessToken(tokenValue, new Date(expirationTime));
                 }
             }
